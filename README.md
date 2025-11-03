@@ -1,6 +1,6 @@
-# Rust Template
+# Rusty Embeddings
 
-A minimal template repository for Rust projects.
+**Rusty Embeddings** uses embedding tools to convert text into vector representations with persistent caching for fast reuse.
 
 ---
 
@@ -9,14 +9,14 @@ A minimal template repository for Rust projects.
 To include this crate in your project, add it to your dependencies:
 
 ```bash
-cargo add --git https://github.com/sindre0830/template-rust-crate.git --tag v0.1.0 template-rust-crate
+cargo add --git https://github.com/sindre0830/rusty-embeddings.git --tag v0.1.0 rusty-embeddings
 ```
 
 Or manually in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-template-rust-crate = { git = "https://github.com/sindre0830/template-rust-crate.git", tag = "v0.1.0" }
+rusty-embeddings = { git = "https://github.com/sindre0830/rusty-embeddings.git", tag = "v0.1.0" }
 ```
 
 ### Example
