@@ -42,6 +42,7 @@ impl EmbeddingService {
         h.finalize().to_hex().to_string()
     }
 
+    /// Builds embeddings for the given texts.
     pub fn build(&self, texts: Vec<String>) -> Result<Vec<Vec<f32>>> {
         let mut results: Vec<Option<Vec<f32>>> = vec![None; texts.len()];
 
@@ -88,6 +89,40 @@ impl EmbeddingService {
             .into_iter()
             .map(|x| x.expect("embedding should be present"))
             .collect())
+    }
+
+    /// returns indices of candidates sorted by cosine similarity (descending)
+    pub fn rank_candidates(
+        &self,
+        query: &str,
+        candidates: &[Vec<f32>],
+    ) -> Result<Vec<(usize, f32)>> {
+        let query_vec = self
+            .build(vec![query.to_string()])?
+            .pop()
+            .expect("query embedding missing");
+
+        let mut scored: Vec<(usize, f32)> = candidates
+            .iter()
+            .enumerate()
+            .map(|(i, v)| (i, cosine_similarity(&query_vec, v)))
+            .collect();
+
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Less));
+
+        Ok(scored)
+    }
+}
+
+fn cosine_similarity(vec1: &[f32], vec2: &[f32]) -> f32 {
+    let dot_product: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
+    let magnitude1: f32 = vec1.iter().map(|a| a * a).sum::<f32>().sqrt();
+    let magnitude2: f32 = vec2.iter().map(|b| b * b).sum::<f32>().sqrt();
+
+    if magnitude1 == 0.0 || magnitude2 == 0.0 {
+        0.0
+    } else {
+        dot_product / (magnitude1 * magnitude2)
     }
 }
 

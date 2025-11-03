@@ -1,20 +1,25 @@
 use rusty_embeddings::EmbeddingService;
 
 fn main() -> anyhow::Result<()> {
-    // sample texts
+    let service = EmbeddingService::new().model(fastembed::EmbeddingModel::GTEBaseENV15);
+
     let texts = vec![
-        "hello world".to_string(),
-        "embedded caching example".to_string(),
-        "another one".to_string(),
+        "The stock market closed higher after positive earnings reports.".to_string(),
+        "Inflation rates are expected to decrease next quarter.".to_string(),
+        "Cryptocurrency prices continue to show high volatility.".to_string(),
+        "Investors are optimistic about the technology sector.".to_string(),
+        "The company announced a new share buyback program.".to_string(),
     ];
 
-    // create embedding instance with default options
-    let vectors = EmbeddingService::new()
-        .model(fastembed::EmbeddingModel::GTEBaseENV15)
-        .build(texts)?;
+    let embeddings = service.build(texts.clone())?;
+    let query = "positive";
 
-    println!("generated {} embeddings", vectors.len());
-    println!("first embedding length: {}", vectors[0].len());
+    let sorted_indices = service.rank_candidates(query, &embeddings)?;
+
+    println!("Similarity ranking:");
+    for (idx, score) in sorted_indices {
+        println!("  {:<2} | score: {:.4} | {}", idx, score, texts[idx]);
+    }
 
     Ok(())
 }
