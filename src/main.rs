@@ -1,4 +1,4 @@
-use rusty_embeddings::embedding::EmbeddingService;
+use rusty_embeddings::EmbeddingService;
 
 fn main() -> anyhow::Result<()> {
     // sample texts
