@@ -11,7 +11,7 @@ fn main() -> anyhow::Result<()> {
         "The company announced a new share buyback program.".to_string(),
     ];
 
-    let embeddings = service.build(texts.clone())?;
+    let embeddings = service.build(&texts)?;
     let query = "positive";
 
     let sorted_indices = service.rank_candidates(query, &embeddings)?;
