@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     path::PathBuf,
-    sync::{Mutex, OnceLock},
+    sync::{Arc, Mutex, OnceLock},
 };
 
 use anyhow::{Context, Result, bail};
@@ -9,10 +9,11 @@ use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 
 mod io;
 
+#[derive(Clone)]
 pub struct EmbeddingService {
     pub model: EmbeddingModel,
     pub cache_dir: PathBuf,
-    model_inner: OnceLock<Mutex<TextEmbedding>>,
+    model_inner: Arc<OnceLock<Mutex<TextEmbedding>>>,
 }
 
 impl Default for EmbeddingService {
@@ -20,7 +21,7 @@ impl Default for EmbeddingService {
         Self {
             model: EmbeddingModel::default(),
             cache_dir: PathBuf::from(".cache"),
-            model_inner: OnceLock::new(),
+            model_inner: Arc::new(OnceLock::new()),
         }
     }
 }
