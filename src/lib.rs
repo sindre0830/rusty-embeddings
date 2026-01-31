@@ -13,6 +13,7 @@ mod io;
 pub struct EmbeddingService {
     pub model: EmbeddingModel,
     pub cache_dir: PathBuf,
+    pub batch_size: usize,
     model_inner: Arc<OnceLock<Mutex<TextEmbedding>>>,
 }
 
@@ -21,6 +22,7 @@ impl Default for EmbeddingService {
         Self {
             model: EmbeddingModel::default(),
             cache_dir: PathBuf::from(".cache"),
+            batch_size: 8,
             model_inner: Arc::new(OnceLock::new()),
         }
     }
@@ -38,6 +40,11 @@ impl EmbeddingService {
 
     pub fn cache_dir(mut self, path: PathBuf) -> Self {
         self.cache_dir = path;
+        self
+    }
+
+    pub fn batch_size(mut self, size: usize) -> Self {
+        self.batch_size = size;
         self
     }
 
@@ -120,27 +127,29 @@ impl EmbeddingService {
                 .lock()
                 .map_err(|_| anyhow::anyhow!("embedding model mutex poisoned"))?;
 
-            let batch: Vec<String> = misses.iter().map(|(_, t)| t.clone()).collect();
-            let vecs = model
-                .embed(batch, None)
-                .context("embedding texts with fastembed")?;
+            for chunk in misses.chunks(self.batch_size) {
+                let batch: Vec<String> = chunk.iter().map(|(_, t)| t.clone()).collect();
+                let vecs = model
+                    .embed(batch, None)
+                    .context("embedding texts with fastembed")?;
 
-            if vecs.len() != misses.len() {
-                bail!(
-                    "fastembed returned {} vectors for {} inputs",
-                    vecs.len(),
-                    misses.len()
-                );
-            }
-
-            for ((key, _), v) in misses.into_iter().zip(vecs.into_iter()) {
-                if let Err(e) = cache.save(&key, &v) {
-                    eprintln!("warning: cache write failed for {key}: {e}");
+                if vecs.len() != chunk.len() {
+                    bail!(
+                        "fastembed returned {} vectors for {} inputs",
+                        vecs.len(),
+                        chunk.len()
+                    );
                 }
 
-                if let Some(positions) = key_positions.remove(&key) {
-                    for idx in positions {
-                        results[idx] = Some(v.clone());
+                for ((key, _), v) in chunk.iter().zip(vecs.into_iter()) {
+                    if let Err(e) = cache.save(key, &v) {
+                        eprintln!("warning: cache write failed for {key}: {e}");
+                    }
+
+                    if let Some(positions) = key_positions.remove(key) {
+                        for idx in positions {
+                            results[idx] = Some(v.clone());
+                        }
                     }
                 }
             }
